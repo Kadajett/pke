@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     babybuddy_url: str = "http://babybuddy.babybuddy.svc.cluster.local/api/"
     babybuddy_api_key: str = ""
 
+    # Local code repos
+    local_repos: str = ""  # comma-separated paths
+
+    @property
+    def local_repos_list(self) -> list[str]:
+        return [r.strip() for r in self.local_repos.split(",") if r.strip()]
+
     # Discord
     discord_bot_token: str = ""
     discord_channel_ids: str = ""  # comma-separated

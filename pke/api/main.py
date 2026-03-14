@@ -163,6 +163,10 @@ async def ingest(req: IngestRequest):
         from pke.ingest.babybuddy import ingest_babybuddy
 
         stats = ingest_babybuddy(full=req.full)
+    elif req.source == "localcode":
+        from pke.ingest.localcode import ingest_localcode
+
+        stats = ingest_localcode(repo_path=req.target, full=req.full)
     else:
         return IngestResponse(source=req.source, stats={"error": f"Unknown source: {req.source}"})
 
@@ -177,7 +181,7 @@ async def sources():
 
     sync = SyncState()
 
-    source_types = ["obsidian", "github", "discord", "babybuddy"]
+    source_types = ["obsidian", "github", "discord", "babybuddy", "localcode"]
     result: list[dict] = []
 
     for st in source_types:

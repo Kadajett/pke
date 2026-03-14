@@ -10,6 +10,8 @@ data:
   PKE_OBSIDIAN_VAULT_PATH: "/vault"
   PKE_HOST: "0.0.0.0"
   PKE_PORT: "8000"
+  PKE_DEVDOCS_PATH: "/devdocs"
+  PKE_DEVDOCS_COLLECTIONS: '{"pke-docs-core":["rust","typescript","node","kubernetes","docker","css","dom","bash"],"pke-docs-gamedev":["bevy","tauri","react","react_native"]}'
   PKE_GITHUB_REPOS: "Kadajett/pke,Kadajett/financial-dashboard,Kadajett/Journal,Kadajett/prism-pipe,Kadajett/blECSd,Kadajett/erm-rust,Kadajett/diffCode,Kadajett/cellAuthAI,Kadajett/Tauri-Tidal,Kadajett/HOME,Kadajett/claw-player,Kadajett/openclaw-home,Kadajett/friday-dashboard,Semfora-AI/semfora-engine,Semfora-AI/semfora-error-reporter,Semfora-AI/semfora-web,Semfora-AI/semfora-pm,Semfora-AI/semfora-graph,Semfora-AI/semfora-ci,Semfora-AI/semfora-code,Semfora-AI/semfora-adk,Semfora-AI/semforma-git"
 ---
 apiVersion: v1
@@ -56,6 +58,38 @@ spec:
     requests:
       storage: 5Gi
 ---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pke-devdocs
+spec:
+  capacity:
+    storage: 25Gi
+  accessModes: [ReadOnlyMany]
+  storageClassName: ""
+  local:
+    path: /bulk-storage/localDocs/devDocs/public/docs
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["theshire"]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pke-devdocs
+  namespace: pke
+spec:
+  accessModes: [ReadOnlyMany]
+  storageClassName: ""
+  volumeName: pke-devdocs
+  resources:
+    requests:
+      storage: 25Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -87,6 +121,9 @@ spec:
             - name: vault
               mountPath: /vault
               readOnly: true
+            - name: devdocs
+              mountPath: /devdocs
+              readOnly: true
             - name: data
               mountPath: /app/data
           resources:
@@ -99,6 +136,9 @@ spec:
         - name: vault
           persistentVolumeClaim:
             claimName: pke-obsidian-vault
+        - name: devdocs
+          persistentVolumeClaim:
+            claimName: pke-devdocs
         - name: data
           persistentVolumeClaim:
             claimName: pke-data

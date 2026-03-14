@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     github_repos: str = ""  # comma-separated: "Kadajett/pke,Kadajett/other"
     github_token: str = ""
 
+    # DevDocs
+    devdocs_path: str = "/bulk-storage/localDocs/devDocs/public/docs/"
+    devdocs_collections: str = ""  # JSON map, empty = use defaults
+
     # Discord
     discord_bot_token: str = ""
     discord_channel_ids: str = ""  # comma-separated

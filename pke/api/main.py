@@ -67,11 +67,15 @@ async def health():
 async def search(
     q: str = Query(..., description="Search query text"),
     source_type: str | None = Query(None, description="Filter by source type"),
+    collection: str | None = Query(None, description="Qdrant collection (default: pke, or pke-docs-core, pke-docs-gamedev, 'all')"),
     date_from: str | None = Query(None, description="Filter by date (YYYY-MM-DD)"),
     date_to: str | None = Query(None, description="Filter by date (YYYY-MM-DD)"),
     limit: int = Query(10, ge=1, le=100, description="Max results"),
 ):
-    """Search the knowledge base."""
+    """Search the knowledge base.
+
+    When collection='all', searches pke + all devdocs collections and merges by score.
+    """
     try:
         vector = embed_text(q)
     except EmbeddingError as exc:
@@ -89,13 +93,37 @@ async def search(
 
     query_filter = Filter(must=must_conditions) if must_conditions else None
 
-    results = client.query_points(
-        collection_name=settings.qdrant_collection,
-        query=vector,
-        query_filter=query_filter,
-        limit=limit,
-        with_payload=True,
-    ).points
+    # Determine which collections to search
+    if collection == "all":
+        from pke.ingest.devdocs import _get_collections_map
+
+        existing = {c.name for c in client.get_collections().collections}
+        target_collections = [settings.qdrant_collection]
+        for cname in _get_collections_map():
+            if cname in existing:
+                target_collections.append(cname)
+    elif collection and collection != settings.qdrant_collection:
+        target_collections = [collection]
+    else:
+        target_collections = [settings.qdrant_collection]
+
+    all_results = []
+    for coll in target_collections:
+        try:
+            hits = client.query_points(
+                collection_name=coll,
+                query=vector,
+                query_filter=query_filter,
+                limit=limit,
+                with_payload=True,
+            ).points
+            all_results.extend(hits)
+        except Exception:
+            continue  # collection may not exist
+
+    # Sort by score descending, take top `limit`
+    all_results.sort(key=lambda r: r.score, reverse=True)
+    all_results = all_results[:limit]
 
     return SearchResponse(
         query=q,
@@ -106,9 +134,9 @@ async def search(
                 source_type=r.payload.get("source_type", "unknown"),
                 metadata={k: v for k, v in r.payload.items() if k != "text"},
             )
-            for r in results
+            for r in all_results
         ],
-        count=len(results),
+        count=len(all_results),
     )
 
 
@@ -127,25 +155,28 @@ async def ingest(req: IngestRequest):
         from pke.ingest.discord import ingest_discord
 
         stats = ingest_discord(channel_id=req.target, full=req.full)
+    elif req.source == "devdocs":
+        from pke.ingest.devdocs import ingest_devdocs
+
+        stats = ingest_devdocs(target=req.target, full=req.full)
     else:
         return IngestResponse(source=req.source, stats={"error": f"Unknown source: {req.source}"})
 
     return IngestResponse(source=req.source, stats=stats)
 
 
-@app.get("/sources", response_model=list[SourceInfo])
+@app.get("/sources")
 async def sources():
-    """List indexed sources with counts and last sync timestamps."""
+    """List indexed sources with counts, last sync timestamps, and devdocs collection stats."""
     client = get_client()
     from pke.sync.state import SyncState
 
     sync = SyncState()
 
     source_types = ["obsidian", "github", "discord"]
-    result = []
+    result: list[dict] = []
 
     for st in source_types:
-        # Count points with this source_type
         count_result = client.count(
             collection_name=settings.qdrant_collection,
             count_filter={"must": [{"key": "source_type", "match": {"value": st}}]},
@@ -155,6 +186,20 @@ async def sources():
         cursors = sync.get_all(st)
         last_sync = max(cursors.values()) if cursors else None
 
-        result.append(SourceInfo(source_type=st, count=count_result.count, last_sync=last_sync))
+        result.append({"source_type": st, "count": count_result.count, "last_sync": last_sync})
+
+    # Add devdocs collection stats
+    from pke.ingest.devdocs import get_devdocs_stats
+
+    devdocs_stats = get_devdocs_stats()
+    for collection_name, info in devdocs_stats.items():
+        result.append({
+            "source_type": "devdocs",
+            "collection": collection_name,
+            "docsets": info["docsets"],
+            "count": info["count"],
+            "synced_files": info.get("synced_files", 0),
+            "exists": info["exists"],
+        })
 
     return result

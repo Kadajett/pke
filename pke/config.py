@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     devdocs_path: str = "/bulk-storage/localDocs/devDocs/public/docs/"
     devdocs_collections: str = ""  # JSON map, empty = use defaults
 
+    # BabyBuddy
+    babybuddy_url: str = "http://babybuddy.babybuddy.svc.cluster.local/api/"
+    babybuddy_api_key: str = ""
+
     # Discord
     discord_bot_token: str = ""
     discord_channel_ids: str = ""  # comma-separated

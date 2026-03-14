@@ -12,6 +12,7 @@ data:
   PKE_PORT: "8000"
   PKE_DEVDOCS_PATH: "/devdocs"
   PKE_DEVDOCS_COLLECTIONS: '{"pke-docs-core":["rust","typescript","node","kubernetes","docker","css","dom","bash"],"pke-docs-gamedev":["bevy","tauri","react","react_native"]}'
+  PKE_BABYBUDDY_URL: "http://babybuddy.babybuddy.svc.cluster.local/api/"
   PKE_GITHUB_REPOS: "Kadajett/pke,Kadajett/financial-dashboard,Kadajett/Journal,Kadajett/prism-pipe,Kadajett/blECSd,Kadajett/erm-rust,Kadajett/diffCode,Kadajett/cellAuthAI,Kadajett/Tauri-Tidal,Kadajett/HOME,Kadajett/claw-player,Kadajett/openclaw-home,Kadajett/friday-dashboard,Semfora-AI/semfora-engine,Semfora-AI/semfora-error-reporter,Semfora-AI/semfora-web,Semfora-AI/semfora-pm,Semfora-AI/semfora-graph,Semfora-AI/semfora-ci,Semfora-AI/semfora-code,Semfora-AI/semfora-adk,Semfora-AI/semforma-git"
 ---
 apiVersion: v1

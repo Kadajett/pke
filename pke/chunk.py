@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
+import uuid
 from dataclasses import dataclass
 
 from langchain_text_splitters import (
@@ -24,7 +24,7 @@ class Chunk:
 def _make_id(source: str, position: int, text: str) -> str:
     """Create a deterministic chunk ID from source, position, and content."""
     raw = f"{source}::{position}::{text[:200]}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:24]
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, raw))
 
 
 def chunk_markdown(

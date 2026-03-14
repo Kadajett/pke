@@ -8,9 +8,15 @@ from qdrant_client.models import Distance, PayloadSchemaType, VectorParams
 from pke.config import settings
 
 
+_client: QdrantClient | None = None
+
+
 def get_client() -> QdrantClient:
-    """Get a Qdrant client instance."""
-    return QdrantClient(url=settings.qdrant_url)
+    """Get a singleton Qdrant client instance."""
+    global _client
+    if _client is None:
+        _client = QdrantClient(url=settings.qdrant_url)
+    return _client
 
 
 def ensure_collection(client: QdrantClient | None = None) -> None:
@@ -36,6 +42,7 @@ def ensure_collection(client: QdrantClient | None = None) -> None:
         ("date", PayloadSchemaType.KEYWORD),
         ("author", PayloadSchemaType.KEYWORD),
         ("url", PayloadSchemaType.KEYWORD),
+        ("tags", PayloadSchemaType.KEYWORD),
     ]:
         client.create_payload_index(
             collection_name=settings.qdrant_collection,

@@ -37,8 +37,8 @@ def _fetch_messages(channel_id: str, after: str | None = None, limit: int = 100)
             all_messages.extend(batch)
             if len(batch) < limit:
                 break
-            # Discord returns newest first; we want oldest first
-            params["after"] = batch[-1]["id"]
+            # Discord returns newest first; batch[0] is the newest message
+            params["after"] = batch[0]["id"]
 
     # Sort oldest first
     all_messages.sort(key=lambda m: m["id"])

@@ -26,7 +26,7 @@ dev = [
 ]
 
 [project.scripts]
-pke = "pke.cli.main:app"
+pke = "pke.cli.main:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]

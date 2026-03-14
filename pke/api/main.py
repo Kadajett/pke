@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
+from fastapi.responses import JSONResponse
+
 from pke.config import settings
 from pke.db.setup import ensure_collection, get_client
-from pke.embed import embed_text
+from pke.embed import EmbeddingError, embed_text
 
 
 @asynccontextmanager
@@ -56,7 +58,7 @@ class SourceInfo(BaseModel):
 @app.get("/health")
 async def health():
     """Health check endpoint."""
-    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "ok", "timestamp": datetime.now(UTC).isoformat()}
 
 
 @app.get("/search", response_model=SearchResponse)
@@ -68,7 +70,10 @@ async def search(
     limit: int = Query(10, ge=1, le=100, description="Max results"),
 ):
     """Search the knowledge base."""
-    vector = embed_text(q)
+    try:
+        vector = embed_text(q)
+    except EmbeddingError as exc:
+        return JSONResponse(status_code=503, content={"error": str(exc)})
     client = get_client()
 
     # Build filter conditions

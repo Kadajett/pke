@@ -23,11 +23,20 @@ class Settings(BaseSettings):
     obsidian_vault_path: str = str(Path.home() / "Documents" / "Journal")
 
     # GitHub
-    github_repos: list[str] = []  # e.g. ["Kadajett/pke"]
+    github_repos: str = ""  # comma-separated: "Kadajett/pke,Kadajett/other"
+    github_token: str = ""
 
     # Discord
     discord_bot_token: str = ""
-    discord_channel_ids: list[str] = []
+    discord_channel_ids: str = ""  # comma-separated
+
+    @property
+    def github_repos_list(self) -> list[str]:
+        return [r.strip() for r in self.github_repos.split(",") if r.strip()]
+
+    @property
+    def discord_channel_ids_list(self) -> list[str]:
+        return [c.strip() for c in self.discord_channel_ids.split(",") if c.strip()]
 
     # Sync state DB
     sync_db_path: str = "data/sync_state.db"

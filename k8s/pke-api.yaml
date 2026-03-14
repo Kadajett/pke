@@ -10,6 +10,7 @@ data:
   PKE_OBSIDIAN_VAULT_PATH: "/vault"
   PKE_HOST: "0.0.0.0"
   PKE_PORT: "8000"
+  PKE_GITHUB_REPOS: "Kadajett/pke,Kadajett/financial-dashboard,Kadajett/Journal,Kadajett/prism-pipe,Kadajett/blECSd,Kadajett/erm-rust,Kadajett/diffCode,Kadajett/cellAuthAI,Kadajett/Tauri-Tidal,Kadajett/HOME,Kadajett/claw-player,Kadajett/openclaw-home,Kadajett/friday-dashboard"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -80,6 +81,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: pke-config
+            - secretRef:
+                name: pke-secrets
           volumeMounts:
             - name: vault
               mountPath: /vault

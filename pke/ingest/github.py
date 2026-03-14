@@ -12,10 +12,10 @@ from pke.sync.state import SyncState
 
 
 def _gh_headers() -> dict:
-    """Get GitHub API headers. Uses GH_TOKEN env var if available."""
+    """Get GitHub API headers."""
     import os
 
-    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN", "")
+    token = settings.github_token or os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN", "")
     headers = {"Accept": "application/vnd.github+json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -61,7 +61,7 @@ def ingest_github(repo: str | None = None, full: bool = False) -> dict:
     Returns:
         Summary dict with counts.
     """
-    repos = [repo] if repo else settings.github_repos
+    repos = [repo] if repo else settings.github_repos_list
     if not repos:
         return {"error": "No repos configured. Set PKE_GITHUB_REPOS or pass --repo."}
 

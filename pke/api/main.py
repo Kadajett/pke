@@ -41,7 +41,7 @@ class SearchResponse(BaseModel):
 
 
 class IngestRequest(BaseModel):
-    source: str  # "obsidian", "github", "discord"
+    source: str  # "obsidian", "github", "discord", "babybuddy"
     target: str | None = None  # vault path, repo, or channel ID
     full: bool = False
 
@@ -159,6 +159,10 @@ async def ingest(req: IngestRequest):
         from pke.ingest.devdocs import ingest_devdocs
 
         stats = ingest_devdocs(target=req.target, full=req.full)
+    elif req.source == "babybuddy":
+        from pke.ingest.babybuddy import ingest_babybuddy
+
+        stats = ingest_babybuddy(full=req.full)
     else:
         return IngestResponse(source=req.source, stats={"error": f"Unknown source: {req.source}"})
 
@@ -173,7 +177,7 @@ async def sources():
 
     sync = SyncState()
 
-    source_types = ["obsidian", "github", "discord"]
+    source_types = ["obsidian", "github", "discord", "babybuddy"]
     result: list[dict] = []
 
     for st in source_types:

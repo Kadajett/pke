@@ -10,7 +10,7 @@ data:
   PKE_OBSIDIAN_VAULT_PATH: "/vault"
   PKE_HOST: "0.0.0.0"
   PKE_PORT: "8000"
-  PKE_GITHUB_REPOS: "Kadajett/pke,Kadajett/financial-dashboard,Kadajett/Journal,Kadajett/prism-pipe,Kadajett/blECSd,Kadajett/erm-rust,Kadajett/diffCode,Kadajett/cellAuthAI,Kadajett/Tauri-Tidal,Kadajett/HOME,Kadajett/claw-player,Kadajett/openclaw-home,Kadajett/friday-dashboard"
+  PKE_GITHUB_REPOS: "Kadajett/pke,Kadajett/financial-dashboard,Kadajett/Journal,Kadajett/prism-pipe,Kadajett/blECSd,Kadajett/erm-rust,Kadajett/diffCode,Kadajett/cellAuthAI,Kadajett/Tauri-Tidal,Kadajett/HOME,Kadajett/claw-player,Kadajett/openclaw-home,Kadajett/friday-dashboard,Semfora-AI/semfora-engine,Semfora-AI/semfora-error-reporter,Semfora-AI/semfora-web,Semfora-AI/semfora-pm,Semfora-AI/semfora-graph,Semfora-AI/semfora-ci,Semfora-AI/semfora-code,Semfora-AI/semfora-adk,Semfora-AI/semforma-git"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

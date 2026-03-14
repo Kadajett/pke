@@ -41,8 +41,8 @@ class SearchResponse(BaseModel):
 
 
 class IngestRequest(BaseModel):
-    source: str  # "obsidian", "github", "discord"
-    target: str | None = None  # vault path, repo, or channel ID
+    source: str  # "obsidian", "github", "discord", "localcode"
+    target: str | None = None  # vault path, repo, channel ID, or repo path
     full: bool = False
 
 
@@ -127,6 +127,10 @@ async def ingest(req: IngestRequest):
         from pke.ingest.discord import ingest_discord
 
         stats = ingest_discord(channel_id=req.target, full=req.full)
+    elif req.source == "localcode":
+        from pke.ingest.localcode import ingest_localcode
+
+        stats = ingest_localcode(target=req.target, full=req.full)
     else:
         return IngestResponse(source=req.source, stats={"error": f"Unknown source: {req.source}"})
 
@@ -141,7 +145,7 @@ async def sources():
 
     sync = SyncState()
 
-    source_types = ["obsidian", "github", "discord"]
+    source_types = ["obsidian", "github", "discord", "localcode"]
     result = []
 
     for st in source_types:

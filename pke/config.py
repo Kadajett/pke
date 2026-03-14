@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     discord_bot_token: str = ""
     discord_channel_ids: str = ""  # comma-separated
 
+    # Local code repos
+    local_repos: str = ""  # comma-separated paths
+
     @property
     def github_repos_list(self) -> list[str]:
         return [r.strip() for r in self.github_repos.split(",") if r.strip()]
@@ -37,6 +40,10 @@ class Settings(BaseSettings):
     @property
     def discord_channel_ids_list(self) -> list[str]:
         return [c.strip() for c in self.discord_channel_ids.split(",") if c.strip()]
+
+    @property
+    def local_repos_list(self) -> list[str]:
+        return [r.strip() for r in self.local_repos.split(",") if r.strip()]
 
     # Sync state DB
     sync_db_path: str = "data/sync_state.db"

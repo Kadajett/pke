@@ -43,6 +43,9 @@ def ensure_collection(client: QdrantClient | None = None) -> None:
         ("author", PayloadSchemaType.KEYWORD),
         ("url", PayloadSchemaType.KEYWORD),
         ("tags", PayloadSchemaType.KEYWORD),
+        ("repo", PayloadSchemaType.KEYWORD),
+        ("language", PayloadSchemaType.KEYWORD),
+        ("symbol_name", PayloadSchemaType.KEYWORD),
     ]:
         client.create_payload_index(
             collection_name=settings.qdrant_collection,

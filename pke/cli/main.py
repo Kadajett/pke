@@ -23,6 +23,10 @@ def cmd_ingest(args: argparse.Namespace) -> None:
         from pke.ingest.discord import ingest_discord
 
         stats = ingest_discord(channel_id=args.target, full=args.full)
+    elif source == "localcode":
+        from pke.ingest.localcode import ingest_localcode
+
+        stats = ingest_localcode(target=args.target, full=args.full)
     else:
         print(f"Unknown source: {source}", file=sys.stderr)
         sys.exit(1)
@@ -58,7 +62,7 @@ def main() -> None:
 
     # ingest
     p_ingest = sub.add_parser("ingest", help="Run ingestion pipeline")
-    p_ingest.add_argument("source", choices=["obsidian", "github", "discord"])
+    p_ingest.add_argument("source", choices=["obsidian", "github", "discord", "localcode"])
     p_ingest.add_argument("--target", help="Target path/repo/channel (source-specific)")
     p_ingest.add_argument("--full", action="store_true", help="Full re-ingestion")
     p_ingest.set_defaults(func=cmd_ingest)

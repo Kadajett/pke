@@ -32,12 +32,18 @@ def _bb_headers() -> dict[str, str]:
     headers = {"Accept": "application/json"}
     if settings.babybuddy_api_key:
         headers["Authorization"] = f"Token {settings.babybuddy_api_key}"
+    if settings.babybuddy_host:
+        headers["Host"] = settings.babybuddy_host
     return headers
 
 
 def _fetch_all(endpoint: str, since: str | None = None) -> list[dict]:
     """Fetch all records from a BabyBuddy endpoint with pagination."""
-    url = f"{settings.babybuddy_url.rstrip('/')}{endpoint}"
+    base = settings.babybuddy_url.rstrip('/')
+    # Endpoints already have /api/ prefix, base might too — normalize
+    if base.endswith('/api'):
+        base = base[:-4]
+    url = f"{base}{endpoint}"
     ordering = "-start" if endpoint != "/api/weight/" else "-date"
     params: dict = {"limit": 100, "offset": 0}
     if since:

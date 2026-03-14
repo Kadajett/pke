@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     # BabyBuddy
     babybuddy_url: str = "http://babybuddy.babybuddy.svc.cluster.local/api/"
     babybuddy_api_key: str = ""
+    babybuddy_host: str = ""  # Host header override for ALLOWED_HOSTS
 
     # Local code repos
     local_repos: str = ""  # comma-separated paths

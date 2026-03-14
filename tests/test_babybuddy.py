@@ -7,6 +7,7 @@ from pke.ingest.babybuddy import (
     _build_individual_chunks,
     _format_change,
     _format_feeding,
+    _format_note,
     _format_sleep,
     _format_tummy_time,
     _format_weight,
@@ -69,6 +70,20 @@ def test_format_weight():
     assert "2026-03-10" in result
 
 
+def test_format_note():
+    record = {"note": "Theo smiled for the first time!", "time": "2026-03-14T10:00:00"}
+    result = _format_note(record)
+    assert "smiled" in result
+    assert "2026-03-14" in result
+
+
+def test_format_note_with_date_fallback():
+    record = {"note": "Weight check", "date": "2026-03-14"}
+    result = _format_note(record)
+    assert "Weight check" in result
+    assert "2026-03-14" in result
+
+
 def test_build_daily_summaries():
     records = {
         "feedings": [
@@ -89,7 +104,7 @@ def test_build_daily_summaries():
     assert chunks[0].metadata["source_type"] == "babybuddy"
     assert chunks[0].metadata["record_type"] == "daily_summary"
     assert "2 entries" in chunks[0].text  # feedings count
-    assert "1 entries" in chunks[0].text  # sleep count
+    assert "1 entry" in chunks[0].text  # sleep count (singular)
 
 
 def test_build_daily_summaries_multiple_days():

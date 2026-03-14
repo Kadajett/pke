@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
-from datetime import datetime
+from datetime import UTC, datetime
 
 import httpx
 from qdrant_client.models import PointStruct
@@ -13,6 +14,8 @@ from pke.config import settings
 from pke.db.setup import get_client
 from pke.embed import embed_batch
 from pke.sync.state import SyncState
+
+log = logging.getLogger(__name__)
 
 # BabyBuddy API endpoints we ingest
 _ENDPOINTS = {
@@ -35,10 +38,11 @@ def _bb_headers() -> dict[str, str]:
 def _fetch_all(endpoint: str, since: str | None = None) -> list[dict]:
     """Fetch all records from a BabyBuddy endpoint with pagination."""
     url = f"{settings.babybuddy_url.rstrip('/')}{endpoint}"
+    ordering = "-start" if endpoint != "/api/weight/" else "-date"
     params: dict = {"limit": 100, "offset": 0}
     if since:
         # BabyBuddy filters by date fields; use ordering + client-side filter
-        params["ordering"] = "-start" if endpoint != "/api/weight/" else "-date"
+        params["ordering"] = ordering
 
     all_records: list[dict] = []
     with httpx.Client(headers=_bb_headers(), timeout=30) as client:
@@ -60,10 +64,10 @@ def _fetch_all(endpoint: str, since: str | None = None) -> list[dict]:
                     break
                 all_records.append(record)
 
-            # Follow pagination
+            # Follow pagination — preserve ordering param in case next URL omits it
             if isinstance(data, dict) and data.get("next"):
                 url = data["next"]
-                params = {}
+                params = {"ordering": ordering} if since else {}
             else:
                 url = None
 
@@ -76,12 +80,6 @@ def _get_record_timestamp(record: dict) -> str | None:
         if field in record and record[field]:
             return record[field]
     return None
-
-
-def _get_child_name(record: dict) -> str:
-    """Extract child name from record (BabyBuddy includes child ID)."""
-    # Default to Theo since that's our primary child
-    return "Theo"
 
 
 def _format_feeding(record: dict) -> str:
@@ -123,8 +121,6 @@ def _format_change(record: dict) -> str:
     parts.append(", ".join(tags) if tags else "dry")
     if record.get("time"):
         parts.append(f"at {record['time']}")
-    if record.get("amount"):
-        parts.append(f"amount: {record['amount']}")
     if record.get("notes"):
         parts.append(f"notes: {record['notes']}")
     return " | ".join(parts)
@@ -194,7 +190,9 @@ def _build_daily_summaries(
 
         for record_type, records in sorted(day_data.items()):
             formatter = _FORMATTERS.get(record_type, str)
-            lines.append(f"\n## {record_type.replace('-', ' ').title()} ({len(records)} entries)")
+            count = len(records)
+            label = "entry" if count == 1 else "entries"
+            lines.append(f"\n## {record_type.replace('-', ' ').title()} ({count} {label})")
             for record in records:
                 lines.append(f"- {formatter(record)}")
 
@@ -277,6 +275,10 @@ def ingest_babybuddy(full: bool = False) -> dict:
     if not settings.babybuddy_url:
         return {"error": "BabyBuddy not configured. Set PKE_BABYBUDDY_URL."}
 
+    if not settings.babybuddy_api_key:
+        log.warning("PKE_BABYBUDDY_API_KEY not set — requests will be unauthenticated")
+        return {"error": "BabyBuddy API key not configured. Set PKE_BABYBUDDY_API_KEY."}
+
     sync = SyncState()
     client = get_client()
     collection = settings.qdrant_collection
@@ -327,7 +329,7 @@ def ingest_babybuddy(full: bool = False) -> dict:
         )
 
     # Update sync cursor
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(UTC).isoformat()
     sync.set_cursor("babybuddy", "last_sync", now)
 
     stats["status"] = "ok"

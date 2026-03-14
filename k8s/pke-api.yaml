@@ -1,0 +1,130 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pke-config
+  namespace: pke
+data:
+  PKE_QDRANT_URL: "http://qdrant:6333"
+  PKE_OLLAMA_URL: "http://ollama.ollama.svc.cluster.local:11434"
+  PKE_EMBED_MODEL: "nomic-embed-text"
+  PKE_OBSIDIAN_VAULT_PATH: "/vault"
+  PKE_HOST: "0.0.0.0"
+  PKE_PORT: "8000"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pke-data
+  namespace: pke
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pke-obsidian-vault
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes: [ReadOnlyMany]
+  storageClassName: ""
+  local:
+    path: /home/kadajett/Documents/Journal
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["theshire"]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pke-obsidian-vault
+  namespace: pke
+spec:
+  accessModes: [ReadOnlyMany]
+  storageClassName: ""
+  volumeName: pke-obsidian-vault
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pke-api
+  namespace: pke
+  labels:
+    app: pke-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pke-api
+  template:
+    metadata:
+      labels:
+        app: pke-api
+    spec:
+      containers:
+        - name: pke-api
+          image: localhost:5000/pke:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: pke-config
+          volumeMounts:
+            - name: vault
+              mountPath: /vault
+              readOnly: true
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: vault
+          persistentVolumeClaim:
+            claimName: pke-obsidian-vault
+        - name: data
+          persistentVolumeClaim:
+            claimName: pke-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pke-server
+  namespace: pke
+spec:
+  selector:
+    app: pke-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pke-tailscale
+  namespace: pke
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: "pke"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    app: pke-api
+  ports:
+    - port: 8000
+      targetPort: 8000

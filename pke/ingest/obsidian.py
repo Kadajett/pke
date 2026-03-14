@@ -7,6 +7,8 @@ from pathlib import Path
 
 import frontmatter
 
+from qdrant_client.models import Filter, FieldCondition, MatchValue, FilterSelector
+
 from pke.chunk import chunk_markdown
 from pke.config import settings
 from pke.db.setup import get_client
@@ -52,12 +54,10 @@ def ingest_obsidian(vault_path: str | None = None, full: bool = False) -> dict:
             # Delete chunks for removed file
             client.delete(
                 collection_name=collection,
-                points_selector={"filter": {
-                    "must": [
-                        {"key": "source_type", "match": {"value": "obsidian"}},
-                        {"key": "filepath", "match": {"value": stored_path}},
-                    ]
-                }},
+                points_selector=FilterSelector(filter=Filter(must=[
+                    FieldCondition(key="source_type", match=MatchValue(value="obsidian")),
+                    FieldCondition(key="filepath", match=MatchValue(value=stored_path)),
+                ])),
             )
             sync.delete("obsidian", stored_path)
             stats["deleted"] += 1
@@ -89,12 +89,10 @@ def ingest_obsidian(vault_path: str | None = None, full: bool = False) -> dict:
         # Delete old chunks for this file before reinserting
         client.delete(
             collection_name=collection,
-            points_selector={"filter": {
-                "must": [
-                    {"key": "source_type", "match": {"value": "obsidian"}},
-                    {"key": "filepath", "match": {"value": rel_path}},
-                ]
-            }},
+            points_selector=FilterSelector(filter=Filter(must=[
+                FieldCondition(key="source_type", match=MatchValue(value="obsidian")),
+                FieldCondition(key="filepath", match=MatchValue(value=rel_path)),
+            ])),
         )
 
         # Embed and upsert

@@ -10,6 +10,8 @@ from pydantic import BaseModel
 
 from fastapi.responses import JSONResponse
 
+from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
+
 from pke.config import settings
 from pke.db.setup import ensure_collection, get_client
 from pke.embed import EmbeddingError, embed_text
@@ -77,23 +79,23 @@ async def search(
     client = get_client()
 
     # Build filter conditions
-    must_conditions = []
+    must_conditions: list[FieldCondition] = []
     if source_type:
-        must_conditions.append({"key": "source_type", "match": {"value": source_type}})
+        must_conditions.append(FieldCondition(key="source_type", match=MatchValue(value=source_type)))
     if date_from:
-        must_conditions.append({"key": "date", "range": {"gte": date_from}})
+        must_conditions.append(FieldCondition(key="date", range=Range(gte=date_from)))
     if date_to:
-        must_conditions.append({"key": "date", "range": {"lte": date_to}})
+        must_conditions.append(FieldCondition(key="date", range=Range(lte=date_to)))
 
-    query_filter = {"must": must_conditions} if must_conditions else None
+    query_filter = Filter(must=must_conditions) if must_conditions else None
 
-    results = client.search(
+    results = client.query_points(
         collection_name=settings.qdrant_collection,
-        query_vector=vector,
+        query=vector,
         query_filter=query_filter,
         limit=limit,
         with_payload=True,
-    )
+    ).points
 
     return SearchResponse(
         query=q,
